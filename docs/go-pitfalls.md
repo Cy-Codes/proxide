@@ -258,6 +258,12 @@ func (b *Bus) Publish(evt model.CaptureEvent) {
 - **Automated Catch:** Unit tests covering IPv4, IPv4-mapped IPv6, and pure IPv6 `AddrPort` inputs.
 - **Required Fix:** Parse peer addresses with `netip.ParseAddrPort` and always call `.Addr().Unmap()` before lookup or storage.
 
+### GP-35: Reading `clientRW.Reader` After `Hijack()` Cancels `r.Context()` on Client Half-Close `io.EOF`
+
+- **Why it hits Go / Proxide:** When `http.ResponseController(w).Hijack()` returns `(conn, rw, err)`, `rw.Reader` still wraps `net/http`'s internal `*connReader`. On any `Read` error — **including a clean TCP half-close `io.EOF`** — `connReader.Read` calls `conn.cancelCtx()`, immediately canceling `r.Context()` and tearing down any `pumpBidirectional` tunnel watching `r.Context()` before the upstream server can send its reply.
+- **Automated Catch:** Loopback `CONNECT` half-close integration test (`TestConnectTunnelHalfCloseAndNoGoroutineLeak`).
+- **Required Fix:** Drain `rw.Reader.Buffered()` once via `rw.Reader.Peek(rw.Reader.Buffered())` into a cloned `bytes.Reader` (`newBufferedConn`), then read strictly from the raw `net.Conn` post-hijack instead of `rw.Reader`.
+
 ---
 
 ## 5. `crypto/tls` & `crypto/x509` MITM Footguns
@@ -341,6 +347,7 @@ func (b *Bus) Publish(evt model.CaptureEvent) {
 | `GP-25` | Uncanonicalized `http.Header` & `req.Host` | `net/http` | Header/Host unit tests | Use `.Get`/`.Set`/`.Del` and `req.Host` |
 | `GP-26` | Half-close `CONNECT` tunnel goroutine leak | `net.Conn` | `go test -race` + leak check | Propagate `CloseWrite()` / close peer |
 | `GP-27` | `::ffff:` IPv4-mapped IPv6 splits client IDs | `net/netip` | Client IP normalization tests | `netip.ParseAddrPort` + `.Addr().Unmap()` |
+| `GP-35` | Post-hijack `rw.Reader` `EOF` cancels `r.Context()` | `net/http` | `CONNECT` half-close test | Peek buffered bytes, then read raw `net.Conn` |
 | `GP-28` | Lock contention & thundering herd in `GetCertificate` | `crypto/tls` | Concurrent handshake test | LRU + `singleflight` outside cache lock |
 | `GP-29` | Leaf cert rejected (`>397d`, no SANs/EKU, clock skew) | `crypto/x509` | Cert policy unit tests | SANs, `EKU`, `-5m` `NotBefore`, `<= 397d` |
 | `GP-30` | Leaf serial collisions across restarts | `crypto/x509` | Serial uniqueness unit test | Positive 128-bit `crypto/rand` serials |

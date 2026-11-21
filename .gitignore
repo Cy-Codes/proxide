@@ -1,0 +1,72 @@
+# ==============================================================================
+# Proxide (.gitignore) — Repository Exclusions
+# ==============================================================================
+
+# --- Secrets, Local Environment, Root CA Keys & Certificates ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.p12
+*.pfx
+.proxide/
+
+# --- Go Build Outputs, Binaries, Coverage, Profiles & Local Workspace ---
+bin/
+dist/
+out/
+/proxided
+/proxide
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.html
+*.prof
+go.work
+go.work.sum
+
+# --- Captured Traffic, Fixtures & Local Map-Local Working Dirs ---
+captures/
+local-maps/
+*.har
+*.pcap
+*.pcapng
+
+# --- IDEs & Editors ---
+.idea/
+.vscode/
+.fleet/
+*.iml
+*.swp
+*.swo
+*~
+
+# --- Python (Tooling) ---
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# --- OS, Logs & Temporary Files ---
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+*.log
+.tmp/
+tmp/
+
+# --- Local AI / Agent Tooling ---
+.claude/
+.cursor/
+.gemini/
+.antigravity/
